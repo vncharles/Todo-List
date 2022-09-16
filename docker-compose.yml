@@ -1,0 +1,45 @@
+version: '3.8'
+services:
+    mysqldb:
+        image: mysql:5.7
+        restart: unless-stopped
+        env_file: ./.env
+        environment:
+            - MYSQL_ROOT_PASSWORD=$MYSQLDB_ROOT_PASSWORD
+            - MYSQL_DATABASE=$MYSQLDB_DATABASE
+        ports:
+            - $MYSQLDB_LOCAL_PORT:$MYSQLDB_DOCKER_PORT
+        volumes:
+            - db:/var/lib/mysql
+    server:
+        depends_on:
+            - mysqldb
+        build: ./server
+        restart: unless-stopped
+        env_file: ./.env
+        ports:
+            - '8080:8080'
+        environment:
+            - DB_HOST=mysqldb
+            - DB_USER=$MYSQLDB_USER
+            - DB_PASSWORD=$MYSQLDB_ROOT_PASSWORD
+            - DB_NAME=$MYSQLDB_DATABASE
+            - DB_PORT=$MYSQLDB_DOCKER_PORT
+        # setup khi ta sua ben code ben docker cung load lai bang nodemon
+        volumes:
+            - ./server:/home/app
+            - /home/app/node_modules
+        stdin_open: true
+        tty: true
+    client:
+        build: ./client
+        volumes:
+            - /home/app/node_modules
+            - ./client:/home/app
+        ports:
+            - '3000:3000'
+        stdin_open: true
+        environment:
+            - CHOKIDAR_USEPOLLING=true
+volumes:
+    db:
